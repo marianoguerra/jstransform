@@ -13,6 +13,16 @@ function main() {
           data-droptarget="todo-task"
           @on.drop="drop"
         >
+  <h1>
+  This   is    a title with    tooo many spaces
+  </h1>
+  <pre>
+  This   is    a pre with    tooo many spaces
+
+   they should be
+
+  preserved
+  </pre>
           <input type="checkbox" :checked="$checked" @on.input="setCheck" />
           <input
             :value="$title"

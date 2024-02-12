@@ -13,6 +13,7 @@ use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax};
 use swc_ecma_visit::{Fold, FoldWith};
 use swc_html_codegen::writer::basic::{BasicHtmlWriter, BasicHtmlWriterConfig};
+use swc_html_minifier::option::MinifyCssOption;
 
 struct TaggedTemplateTransformer {}
 
@@ -54,7 +55,7 @@ fn replace_tagged_tpl_content_with(n: &TaggedTpl, s: String) -> TaggedTpl {
     }
 }
 
-fn parse_html(code: &str) -> Result<swc_html_ast::Document, swc_html_parser::error::Error> {
+fn parse_html(code: &str) -> Result<swc_html_ast::DocumentFragment, swc_html_parser::error::Error> {
     let lexer = swc_html_parser::lexer::Lexer::new(swc_common::input::StringInput::new(
         code.into(),
         BytePos(0),
@@ -62,12 +63,54 @@ fn parse_html(code: &str) -> Result<swc_html_ast::Document, swc_html_parser::err
     ));
     let config = swc_html_parser::parser::ParserConfig::default();
     let mut parser = swc_html_parser::parser::Parser::new(lexer, config);
-    parser.parse_document()
+    let context_element = swc_html_ast::Element {
+        span: Default::default(),
+        namespace: swc_html_ast::Namespace::HTML,
+        tag_name: "div".into(),
+        attributes: vec![],
+        is_self_closing: false,
+        children: vec![],
+        content: None,
+    };
+    parser.parse_document_fragment(context_element, swc_html_ast::DocumentMode::NoQuirks, None)
 }
 
 fn minify_html(code: &str) -> String {
     match parse_html(code) {
-        Ok(doc) => document_to_html_string(&doc),
+        Ok(mut doc) => {
+            let config = swc_html_minifier::option::MinifyOptions {
+                force_set_html5_doctype: false,
+                collapse_whitespaces: swc_html_minifier::option::CollapseWhitespaces::All,
+                remove_empty_metadata_elements: true,
+                remove_comments: true,
+                preserve_comments: None,
+                minify_conditional_comments: true,
+                remove_empty_attributes: false,
+                remove_redundant_attributes:
+                    swc_html_minifier::option::RemoveRedundantAttributes::None,
+                collapse_boolean_attributes: false,
+                merge_metadata_elements: true,
+                normalize_attributes: true,
+                minify_json: swc_html_minifier::option::MinifyJsonOption::Bool(true),
+                minify_js: swc_html_minifier::option::MinifyJsOption::Bool(true),
+                minify_css: MinifyCssOption::Bool(true),
+                minify_additional_scripts_content: None,
+                minify_additional_attributes: None,
+                sort_space_separated_attribute_values: false,
+                sort_attributes: false,
+            };
+            let context_element = swc_html_ast::Element {
+                span: Default::default(),
+                namespace: swc_html_ast::Namespace::HTML,
+                tag_name: "div".into(),
+                attributes: vec![],
+                is_self_closing: false,
+                children: vec![],
+                content: None,
+            };
+            swc_html_minifier::minify_document_fragment(&mut doc, &context_element, &config);
+            document_to_html_string(&doc)
+        }
 
         Err(err) => {
             eprintln!("Error parsing html: {err:?}\n{code}");
@@ -76,7 +119,7 @@ fn minify_html(code: &str) -> String {
     }
 }
 
-fn document_to_html_string(document: &swc_html_ast::Document) -> String {
+fn document_to_html_string(document: &swc_html_ast::DocumentFragment) -> String {
     let mut html_str = String::new();
     {
         use swc_html_codegen::Emit;
@@ -85,7 +128,7 @@ fn document_to_html_string(document: &swc_html_ast::Document) -> String {
             wr,
             swc_html_codegen::CodegenConfig {
                 scripting_enabled: true,
-                minify: true,
+                minify: false,
                 ..Default::default()
             },
         );
