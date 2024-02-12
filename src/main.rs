@@ -30,7 +30,7 @@ fn tpl_to_literal_string(tpl: &Tpl) -> Option<String> {
         let mut s = String::new();
 
         for quasi in tpl.quasis.iter() {
-            s.push_str(&quasi.raw.as_str());
+            s.push_str(quasi.raw.as_str());
         }
 
         Some(s)
@@ -39,14 +39,14 @@ fn tpl_to_literal_string(tpl: &Tpl) -> Option<String> {
 
 fn replace_tagged_tpl_content_with(n: &TaggedTpl, s: String) -> TaggedTpl {
     TaggedTpl {
-        span: n.span.clone(),
+        span: n.span,
         tag: n.tag.clone(),
         type_params: n.type_params.clone(),
         tpl: Box::new(Tpl {
-            span: n.tpl.span.clone(),
+            span: n.tpl.span,
             exprs: vec![],
             quasis: vec![TplElement {
-                span: n.tpl.span.clone(),
+                span: n.tpl.span,
                 tail: true,
                 cooked: None,
                 raw: Atom::new(s),
@@ -57,7 +57,7 @@ fn replace_tagged_tpl_content_with(n: &TaggedTpl, s: String) -> TaggedTpl {
 
 fn parse_html(code: &str) -> Result<swc_html_ast::DocumentFragment, swc_html_parser::error::Error> {
     let lexer = swc_html_parser::lexer::Lexer::new(swc_common::input::StringInput::new(
-        code.into(),
+        code,
         BytePos(0),
         BytePos(code.len() as u32),
     ));
@@ -146,10 +146,7 @@ fn document_to_css_string(document: &swc_css_ast::Stylesheet) -> String {
         let wr = BasicCssWriter::new(&mut css_str, None, BasicCssWriterConfig::default());
         let mut gen = swc_css_codegen::CodeGenerator::new(
             wr,
-            swc_css_codegen::CodegenConfig {
-                minify: true,
-                ..Default::default()
-            },
+            swc_css_codegen::CodegenConfig { minify: true },
         );
 
         gen.emit(&document).unwrap();
@@ -161,7 +158,7 @@ fn document_to_css_string(document: &swc_css_ast::Stylesheet) -> String {
 fn parse_css(code: &str) -> Result<swc_css_ast::Stylesheet, swc_css_parser::error::Error> {
     let config = swc_css_parser::parser::ParserConfig::default();
     let lexer = swc_css_parser::lexer::Lexer::new(
-        swc_common::input::StringInput::new(code.into(), BytePos(0), BytePos(code.len() as u32)),
+        swc_common::input::StringInput::new(code, BytePos(0), BytePos(code.len() as u32)),
         None,
         config,
     );
