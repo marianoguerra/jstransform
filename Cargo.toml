@@ -1,0 +1,18 @@
+[package]
+name = "jstransform"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+modularize_imports = "0.68.5"
+serde_json = "1.0"
+swc_common = { version = "0.33", features = ["concurrent"] }
+swc_core = { version = "0.90", features = ["ecma_plugin_transform"] }
+swc_ecma_ast = "0.112"
+swc_ecma_codegen = "0.148"
+swc_ecma_parser = "0.143"
+swc_ecma_utils = "0.127"
+swc_ecma_visit = "0.98"
+swc_plugin_macro = "0.9"
